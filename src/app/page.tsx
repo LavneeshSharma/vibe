@@ -1,19 +1,25 @@
-import React, { Suspense } from 'react'
-import { prisma } from '@/lib/db' // Adjust the import path as necessary
-import { useTRPC } from '@/trpc/client'
-import { text } from 'stream/consumers';
-import { trpc, getQueryClient } from '@/trpc/server';
-import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { Client } from './client';
-const page = async() => {
-  const queryclient=getQueryClient();
-  void queryclient.prefetchQuery(trpc.createai.queryOptions({ text: 'Hello' }));
+"use client";
+import { useTRPC } from "@/trpc/client";
+import { Button } from "@/components/ui/button";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+const page = () => {
+  const trpc= useTRPC();
+  const invoke=useMutation(trpc.invoke.mutationOptions({
+    onSuccess: (data) => {
+      toast.success("Mutation successful!");
+    },
+    onError: (error) => {
+      console.error("Mutation failed:", error);
+    },
+  }))
   return (
-    <HydrationBoundary state={dehydrate(queryclient)}>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Client />
-      </Suspense>
-    </HydrationBoundary>
+    <div className="p-4 max-w-7xl mx-auto">
+      <Button disabled={invoke.isPending} onClick={()=>{invoke.mutate({ text: 'Hello' })}}>
+      Hello
+      </Button>
+    </div>
   )
 }
 
