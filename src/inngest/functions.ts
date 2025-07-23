@@ -1,9 +1,15 @@
 import { inngest } from "./client";
 import { openai, createAgent } from "@inngest/agent-kit";
+import { Sandbox } from "@e2b/code-interpreter";
+import { getSandbox } from "./utils";
 export const helloWorld = inngest.createFunction(
   { id: "hello-world" },
   { event: "test/hello.world" },
   async ({ event, step }) => {
+    const sandboxId= await step.run("Get Sandbox ID", async () => {
+       const sandbox = await Sandbox.create("vibe-nextjs-Lavneesh-2")
+       return sandbox.sandboxId;
+    });
     const summarizer = createAgent({
       name: "summarizer",
       system: "You are an expert summarizer.  You summarize in 2 words.",
@@ -12,6 +18,11 @@ export const helloWorld = inngest.createFunction(
     const { output } = await summarizer.run(
       `Summarize the following text: ${event.data.value}`,
     );
-   return {output};
+    const sandboxUrl=await step.run("Get Sandbox URL", async () => {
+      const sandboxUrl = await getSandbox(sandboxId);
+      const host= sandboxUrl.getHost(3000);
+      return `https://${host}`;
+    });
+   return {output,sandboxUrl};
   },
 );
