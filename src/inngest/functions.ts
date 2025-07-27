@@ -155,14 +155,16 @@ export const codeAgentFunction = inngest.createFunction(
       if(isError){
         return await prisma.message.create({
           data:{
+            projectId:event.data.projectId,
             content:"Please try again",
             role:"ASSISTANT",
             type:"ERROR",
-          }
-        })
+          },
+        });
       }
-      const message=await prisma.message.create({
+      return await prisma.message.create({
         data:{
+          projectId:event.data.projectId,
           content:result.state?.data?.summary || "",
           role:"ASSISTANT",
           type:"RESULT", 
