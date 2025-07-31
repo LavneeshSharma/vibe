@@ -4,7 +4,8 @@ import "./globals.css";
 import { TRPCReactProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
-
+import {ClerkProvider} from "@clerk/nextjs"
+import { Navbar } from "@/modules/home/ui/components/navbar";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -25,7 +26,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
+    return (
+    <ClerkProvider >
     <TRPCReactProvider>
     <html lang="en" suppressHydrationWarning>
       <body
@@ -36,11 +38,13 @@ export default function RootLayout({
         defaultTheme="system"
         enableSystem
         disableTransitionOnChange>
+        
         <Toaster />
         {children}
         </ThemeProvider>
       </body>
     </html>
     </TRPCReactProvider>
+    </ClerkProvider>
   );
 }
