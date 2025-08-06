@@ -67,7 +67,8 @@ export const projectsRouter=createTRPCRouter({
                 type:"RESULT",
             }
           }
-        }
+        },
+        include: { messages: true },
       })
     
         await inngest.send({

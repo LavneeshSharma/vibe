@@ -1,11 +1,10 @@
 import { inngest } from "./client";
 import { openai, createAgent, createTool, createNetwork,type Tool,type Message,createState} from "@inngest/agent-kit";
 import { Sandbox } from "@e2b/code-interpreter";
-import { getSandbox, lastAssistantTextMessageContent, parseAgentOutput } from "./utils";
+import { getSandbox, lastAssistantTextMessageContent } from "./utils";
 import { z } from "zod";
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "@/prompts";
 import { prisma } from "@/lib/db";
-import { SandboxTimeout } from "./types";
 interface AgentState{
   summary:string;
   files:{[path:string]:string};
@@ -17,7 +16,6 @@ export const codeAgentFunction = inngest.createFunction(
   async ({ event, step }) => {
     const sandboxId= await step.run("get-sandbox-id", async () => {
        const sandbox = await Sandbox.create("vibe-nextjs-Lavneesh-2")
-       await sandbox.setTimeout(SandboxTimeout);
        return sandbox.sandboxId;
     });
     const previousMessages=await step.run("get-previous-messages", async () => {
@@ -28,8 +26,7 @@ export const codeAgentFunction = inngest.createFunction(
         },
         orderBy:{
           createdAt:"desc"
-        },
-        take:5,
+        }
       });
       for(const message of messages){
         formattedMessages.push({
@@ -38,7 +35,7 @@ export const codeAgentFunction = inngest.createFunction(
           content:`1 message: ${message.content}`,
         })
       }
-      return formattedMessages.reverse();
+      return formattedMessages;
     });
     const state=createState<AgentState>({
       summary:"",
@@ -191,6 +188,42 @@ export const codeAgentFunction = inngest.createFunction(
         model:"gpt-4.1",
       })
     })
+   const parseAgentOutput=(value:Message[])=>{
+      const output=value[0];
+      if(output.type!=="text"){
+        return "Fragment";
+      }
+     if(Array.isArray(output.content)){
+      return output.content.map((txt)=>txt).join("");
+     }
+     else{
+      return output;
+     }
+    }
+    const generateFragmentTitle=()=>{
+        if(fragmentTitleOutput[0].type!=="text")
+        {
+          return "Fragment";
+        }
+        if(Array.isArray(fragmentTitleOutput[0].content)){
+          return fragmentTitleOutput[0].content.map((txt)=>txt).join("");
+         }
+         else{
+          return fragmentTitleOutput[0].content;
+         }
+    }
+    const generateResponse=()=>{
+      if(responseOutput[0].type!=="text")
+      {
+        return "Here you go";
+      }
+      if(Array.isArray(responseOutput[0].content)){
+        return responseOutput[0].content.map((txt)=>txt).join("");
+       }
+       else{
+        return responseOutput[0].content;
+       }
+  }
     const {output:fragmentTitleOutput}=await fragmentTitleGenerator.run(result.state?.data?.summary);
     const {output:responseOutput}=await responseGenerator.run(result.state?.data?.summary);
     
@@ -216,12 +249,12 @@ export const codeAgentFunction = inngest.createFunction(
       return await prisma.message.create({
         data:{
           projectId:event.data.projectId,
-          content:parseAgentOutput(responseOutput) as string,
+          content:generateResponse() ,
           role:"ASSISTANT",
           type:"RESULT", 
           fragment:{
             create:{
-              title:parseAgentOutput(fragmentTitleOutput) as string,
+              title:generateFragmentTitle() ,
               file:result.state?.data?.files || {},
               sandboxUrl:sandboxUrl,
             }
@@ -231,7 +264,7 @@ export const codeAgentFunction = inngest.createFunction(
     })
    return {
     url:sandboxUrl,
-    title:parseAgentOutput(fragmentTitleOutput) as string,
+    title:generateFragmentTitle(),
     files:result.state?.data?.files || {},
     summary:result.state?.data?.summary || ""
   };

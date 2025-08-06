@@ -64,7 +64,7 @@ export const messagesRouter=createTRPCRouter({
       }
       const createdMessage=await prisma.message.create({
         data:{
-                content:input.value,
+                content: input.value ,
                 role:"USER",
                 type:"RESULT",
                 projectId: input.projectId

@@ -96,7 +96,7 @@ const AssistantMessage=({
      )
 }
 interface MessageCardProps{
-    content:string;
+    content: string;
     role:MessageRole;
     fragment:Fragment | null;
     createdAt:Date;
